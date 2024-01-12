@@ -1,3 +1,4 @@
+import google.generativeai as genai
 import os
 import speech_recognition as sr
 from gtts import gTTS
@@ -8,53 +9,85 @@ import time
 
 # Load environment variables
 load_dotenv()
-OPENAI_KEY = os.getenv('OPENAI_KEY')
+YOUR_API_KEY = os.getenv('YOUR_API_KEY')
 
-# Initialize OpenAI
-client = openai.OpenAI(api_key="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")
+genai.configure(api_key=YOUR_API_KEY)
 
-# Global variable to store the recognized text
-recognized_text = "hi"
-response = {}
+# Set up the model
+generation_config = {
+    "temperature": 0.9,
+    "top_p": 1,
+    "top_k": 1,
+    "max_output_tokens": 2048,
+}
+safety_settings = [
+    {"category": "HARM_CATEGORY_HARASSMENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_HATE_SPEECH",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+    {"category": "HARM_CATEGORY_DANGEROUS_CONTENT",
+        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+]
+model = genai.GenerativeModel(
+    model_name="gemini-pro",
+    generation_config=generation_config,
+    safety_settings=safety_settings
+)
+
 
 def recognize_speech_long(recognizer, source):
-    global recognized_text
+    goon = True
+    while goon:
+        try:
+            # Change the timeout for the next listen to a longer duration
+            audio_data = recognizer.listen(source, timeout=60)
+            recognized_text = recognizer.recognize_google(audio_data)
+            if recognized_text:
+                print("You asked:", recognized_text)
 
-    try:
-        # Change the timeout for the next listen to a longer duration
-        audio_data = recognizer.listen(source, timeout=10)
-        recognized_text = recognizer.recognize_google(audio_data)
-        if recognized_text:
-            print("You asked:", recognized_text)
-            
-            # Send the recognized text to OpenAI
-            if recognized_text != "Friday":
-                global response
-                response = client.completions.create(
-                    model="text-davinci-003",
-                    prompt=recognized_text,
-                    max_tokens=60
-                )
+                # Send the recognized text to OpenAI
+                if recognized_text != "Friday":
 
-            # Use Google Text-to-Speech to read the response out loud
-            text_to_speech(response.choices[0].text.strip() or "sorry, can not!")
+                    # Get user input for the prompt
+                    user_prompt = recognized_text
 
-            # Add a delay of 5 seconds between requests
-            time.sleep(5)
+                    # Define the role and parts for the prompt
+                    prompt_parts = ["instruction: 'you are getting a voice input as text so if the text from the user doesnt finsih the sentence properly just ask the user `sorry but can you say that again?` nothing alse","instruction: always answer me with in 100 words only.", user_prompt]
 
-        else:
-            print("No input received. Waiting for input again.")
+                    # Generate content using the user-provided prompt
+                    response = model.generate_content(prompt_parts, stream=True)
 
-    except sr.UnknownValueError:
-        # Different behavior for UnknownValueError during long input stage
-        print("Could not understand audio during long input. Try again.")
-        text_to_speech("Could not understand. Try again.")
+                    # print(response.text)
+                    # text = response.text
+                    # text = text.replace('•', '  *')
+                    # text_to_speech(text)
+                    for chunk in response:
+                        print(chunk.text, end="", flush=True)
+                        text = chunk.text
+                        text = text.replace('•', '  *')
+                        text_to_speech(text)
+                    print("\nAnyting alse?")
+                    text_to_speech("Anyting alse?")
 
-    except sr.RequestError as e:
-        print(f"Could not request results from Google Web Speech API; {e}")
+                # Use Google Text-to-Speech to read the response out loud
 
-    except sr.WaitTimeoutError:
-        print("Listening timed out. Waiting for input again.")
+            else:
+                print("No input received. Waiting for input again.")
+                goon = False
+
+        except sr.UnknownValueError:
+            # Different behavior for UnknownValueError during long input stage
+            print("Could not understand audio during long input. Try again.")
+            goon = False
+
+        except sr.RequestError as e:
+            print(f"Could not request results from Google Web Speech API; {e}")
+            goon = False
+        except sr.WaitTimeoutError:
+            print("Listening timed out. Waiting for input again.")
+            goon = False
 
 
 def text_to_speech(text):
@@ -73,7 +106,6 @@ def text_to_speech(text):
 
 
 def recognize_speech():
-    global recognized_text
 
     # Initialize the recognizer
     recognizer = sr.Recognizer()

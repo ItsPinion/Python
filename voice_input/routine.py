@@ -48,8 +48,8 @@ def recognize_speech():
                 recognized_text = recognizer.recognize_google(audio_data)
 
                 if "Friday" in recognized_text:
-                    print("It is time for", get_current_task())
-                    text_to_speech("It is time for" + get_current_task())
+                    print(get_current_task())
+                    text_to_speech(get_current_task())
 
                 else:
                     print("Waiting for 'Friday'...")
@@ -68,42 +68,43 @@ def recognize_speech():
 
 def get_current_task():
     current_time = datetime.now().time()
+    formatted_time = current_time.strftime("%H:%M")
 
     if current_time >= datetime.strptime("09:30", "%H:%M").time() and current_time < datetime.strptime("10:00", "%H:%M").time():
-        return "Wake up"
+        return f"[{formatted_time}] It's time to Wake up"
 
     elif current_time >= datetime.strptime("10:00", "%H:%M").time() and current_time < datetime.strptime("11:00", "%H:%M").time():
-        return "Breakfast and relaxation"
+        return f"[{formatted_time}] It's time for Breakfast and relaxation"
 
     elif current_time >= datetime.strptime("11:00", "%H:%M").time() and current_time < datetime.strptime("13:00", "%H:%M").time():
-        return "Study session 1"
+        return f"[{formatted_time}] It's time for Study session 1"
 
     elif current_time >= datetime.strptime("13:00", "%H:%M").time() and current_time < datetime.strptime("14:00", "%H:%M").time():
-        return "Lunch and break"
+        return f"[{formatted_time}] It's time for Lunch and some break"
 
     elif current_time >= datetime.strptime("14:00", "%H:%M").time() and current_time < datetime.strptime("16:00", "%H:%M").time():
-        return "Free time"
+        return f"[{formatted_time}] It's your Free time. Go nuts"
 
     elif current_time >= datetime.strptime("16:00", "%H:%M").time() and current_time < datetime.strptime("18:00", "%H:%M").time():
-        return "Study session 2"
+        return f"[{formatted_time}] It's time for Study session 2"
 
     elif current_time >= datetime.strptime("18:00", "%H:%M").time() and current_time < datetime.strptime("19:00", "%H:%M").time():
-        return "Snack and break"
+        return f"[{formatted_time}] It's time for Snack and some break"
 
     elif current_time >= datetime.strptime("19:00", "%H:%M").time() and current_time < datetime.strptime("21:00", "%H:%M").time():
-        return "Study session 3"
+        return f"[{formatted_time}] It's time for Study session 3"
 
     elif current_time >= datetime.strptime("21:00", "%H:%M").time() and current_time < datetime.strptime("23:00", "%H:%M").time():
-        return "Free time"
+        return f"[{formatted_time}] It's your Free time. Go nuts"
 
     elif current_time >= datetime.strptime("23:00", "%H:%M").time() or current_time < datetime.strptime("01:00", "%H:%M").time():
-        return "Dinner and break"
+        return f"[{formatted_time}] It's time for Dinner and some break"
 
     elif current_time >= datetime.strptime("01:00", "%H:%M").time() and current_time < datetime.strptime("09:30", "%H:%M").time():
-        return "Free time"
+        return f"[{formatted_time}] It's your Free time. Go nuts"
 
     else:
-        return "Sleep"
+        return f"[{formatted_time}] It's time for Sleep"
 
 
 if __name__ == "__main__":
