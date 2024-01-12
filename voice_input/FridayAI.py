@@ -3,7 +3,6 @@ import os
 import speech_recognition as sr
 from gtts import gTTS
 import pygame
-import openai
 from dotenv import load_dotenv
 import time
 
