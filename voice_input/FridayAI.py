@@ -41,7 +41,7 @@ def ai_stream_reply(prompt_parts):
         print(chunk.text, end="", flush=True)
         text = chunk.text
         text = text.replace('•', '  *')
-        text_to_speech(text)
+        # text_to_speech(text)
 
 def recognize_speech_long(recognizer, source):
     goon = True
@@ -60,11 +60,12 @@ def recognize_speech_long(recognizer, source):
                     user_prompt = recognized_text
 
                     # Define the role and parts for the prompt
-                    prompt_parts = ["instruction: 'you are getting a voice input as text so if the text from the user doesnt finsih the sentence properly just ask the user `sorry but can you say that again?` nothing alse","instruction: always answer me with in 100 words only.", user_prompt]
+                    prompt_parts = [ user_prompt]
 
                     # Generate content using the user-provided prompt
                     ai_stream_reply(prompt_parts)
-                    text_to_speech("Anyting alse?")
+                    print("\nAnyting else?")
+                    text_to_speech("Anyting else?")
 
                 # Use Google Text-to-Speech to read the response out loud
 
