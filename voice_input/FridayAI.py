@@ -35,6 +35,13 @@ model = genai.GenerativeModel(
     safety_settings=safety_settings
 )
 
+def ai_stream_reply(prompt_parts):
+    response = model.generate_content(prompt_parts, stream=True)
+    for chunk in response:
+        print(chunk.text, end="", flush=True)
+        text = chunk.text
+        text = text.replace('•', '  *')
+        text_to_speech(text)
 
 def recognize_speech_long(recognizer, source):
     goon = True
@@ -56,18 +63,7 @@ def recognize_speech_long(recognizer, source):
                     prompt_parts = ["instruction: 'you are getting a voice input as text so if the text from the user doesnt finsih the sentence properly just ask the user `sorry but can you say that again?` nothing alse","instruction: always answer me with in 100 words only.", user_prompt]
 
                     # Generate content using the user-provided prompt
-                    response = model.generate_content(prompt_parts, stream=True)
-
-                    # print(response.text)
-                    # text = response.text
-                    # text = text.replace('•', '  *')
-                    # text_to_speech(text)
-                    for chunk in response:
-                        print(chunk.text, end="", flush=True)
-                        text = chunk.text
-                        text = text.replace('•', '  *')
-                        text_to_speech(text)
-                    print("\nAnyting alse?")
+                    ai_stream_reply(prompt_parts)
                     text_to_speech("Anyting alse?")
 
                 # Use Google Text-to-Speech to read the response out loud
