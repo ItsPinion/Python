@@ -17,7 +17,7 @@ generation_config = {
     "temperature": 0.9,
     "top_p": 1,
     "top_k": 1,
-    "max_output_tokens": 400,
+    "max_output_tokens": 2048,
 }
 safety_settings = [
     {"category": "HARM_CATEGORY_HARASSMENT",
@@ -37,31 +37,33 @@ model = genai.GenerativeModel(
 
 def ai_stream_reply(prompt_parts):
     response = model.generate_content(prompt_parts, stream=True)
-    
-    # Use concurrent.futures to process chunks in parallel
+    output_files = []
+
     with concurrent.futures.ThreadPoolExecutor() as executor:
-        output_files = list(executor.map(process_chunk, response))
-    
-    # Play the generated files sequentially
-    play_files(output_files)
+        play_future = None
+        for i, chunk in enumerate(response):
+            text = chunk.text.replace('•', '  *')
+            tts = gTTS(text=text, lang='en')
+            output_file = f'output_{i}.mp3'
+            tts.save(output_file)
+            output_files.append(output_file)
+            if play_future:
+                # Wait for the previous playback to finish before starting the next one
+                play_future.result()
+            play_future = executor.submit(play_file, output_file)
 
-def process_chunk(chunk):
-    text = chunk.text.replace('•', '  *')
-    tts = gTTS(text=text, lang='en')
-    output_file = f'output_{hash(chunk)}.mp3'
-    tts.save(output_file)
-    return output_file
+    # Wait for the final playback to finish
+    if play_future:
+        play_future.result()
 
-def play_files(output_files):
+def play_file(output_file):
     pygame.mixer.init()
+    pygame.mixer.music.load(output_file)
+    pygame.mixer.music.play()
 
-    for file in output_files:
-        pygame.mixer.music.load(file)
-        pygame.mixer.music.play()
-
-        # Wait for playback to finish
-        while pygame.mixer.music.get_busy():
-            pygame.time.Clock().tick(10)
+    # Wait for the playback to finish
+    while pygame.mixer.music.get_busy():
+        pygame.time.Clock().tick(10)
 
 def recognize_speech_long(recognizer, source):
     goon = True
@@ -71,12 +73,13 @@ def recognize_speech_long(recognizer, source):
             recognized_text = recognizer.recognize_google(audio_data)
             if recognized_text:
                 print("You asked:", recognized_text)
-                user_prompt = recognized_text
-                prompt_parts = [user_prompt]
-                ai_stream_reply(prompt_parts)
-                print("\nAnything else?")
-                text_to_speech("Anything else?")
-                    
+
+                if recognized_text != "Friday":
+                    user_prompt = recognized_text
+                    prompt_parts = [user_prompt]
+                    ai_stream_reply(prompt_parts)
+                    print("\nAnything else?")
+                    text_to_speech("Anything else?")
 
             else:
                 print("No input received. Waiting for input again.")
@@ -91,7 +94,6 @@ def recognize_speech_long(recognizer, source):
             goon = False
         except sr.WaitTimeoutError:
             print("Listening timed out. Waiting for input again.")
-            goon = False
 
 def text_to_speech(text):
     tts = gTTS(text=text, lang='en')
@@ -100,6 +102,7 @@ def text_to_speech(text):
     pygame.mixer.music.load('output.mp3')
     pygame.mixer.music.play()
 
+    # Wait for the playback to finish
     while pygame.mixer.music.get_busy():
         pygame.time.Clock().tick(10)
 
