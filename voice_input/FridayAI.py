@@ -7,6 +7,7 @@ import pygame
 from dotenv import load_dotenv
 import threading
 import time
+import google.generativeai.types.generation_types
 
 # Load environment variables
 load_dotenv()
@@ -19,17 +20,17 @@ generation_config = {
     "temperature": 0.9,
     "top_p": 1,
     "top_k": 1,
-    "max_output_tokens": 2048,
+    "max_output_tokens": 400,
 }
 safety_settings = [
     {"category": "HARM_CATEGORY_HARASSMENT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+        "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_HATE_SPEECH",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+        "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+        "threshold": "BLOCK_NONE"},
     {"category": "HARM_CATEGORY_DANGEROUS_CONTENT",
-        "threshold": "BLOCK_MEDIUM_AND_ABOVE"},
+        "threshold": "BLOCK_NONE"},
 ]
 model = genai.GenerativeModel(
     model_name="gemini-pro",
@@ -37,7 +38,6 @@ model = genai.GenerativeModel(
     safety_settings=safety_settings
 )
 chat = model.start_chat()
-
 
 def ai_stream_reply(prompt_parts):
     global chat
@@ -47,15 +47,16 @@ def ai_stream_reply(prompt_parts):
     with concurrent.futures.ThreadPoolExecutor() as executor:
         play_future = None
         for i, chunk in enumerate(response):
-            text = chunk.text.replace('•', '  *')
-            tts = gTTS(text=text, lang='en')
-            output_file = f'output_{i}.mp3'
-            tts.save(output_file)
-            output_files.append(output_file)
-            if play_future:
-                # Wait for the previous playback to finish before starting the next one
-                play_future.result()
-            play_future = executor.submit(play_file, output_file, text)
+            if chunk.parts:
+                text = chunk.text.replace('•', '  *')
+                tts = gTTS(text=text, lang='en')
+                output_file = f'output_{i}.mp3'
+                tts.save(output_file)
+                output_files.append(output_file)
+                if play_future:
+                    # Wait for the previous playback to finish before starting the next one
+                    play_future.result()
+                play_future = executor.submit(play_file, output_file, text)
 
     # Wait for the final playback to finish
     if play_future:
